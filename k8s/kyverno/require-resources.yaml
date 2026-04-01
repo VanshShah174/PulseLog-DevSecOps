@@ -1,0 +1,35 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: require-resources
+  annotations:
+    policies.kyverno.io/title: Require CPU and Memory Limits
+    policies.kyverno.io/severity: medium
+    policies.kyverno.io/description: >
+      Requires all containers to define CPU and memory requests and limits.
+      Without limits, a single runaway pod can consume all node resources
+      and starve other pods. Also required for HPA to work correctly.
+spec:
+  validationFailureAction: Enforce
+  background: true
+  rules:
+    - name: require-resources
+      match:
+        any:
+        - resources:
+            kinds:
+              - Pod
+            namespaces:
+              - pulselog
+      validate:
+        message: "Containers must define CPU and memory requests and limits"
+        pattern:
+          spec:
+            containers:
+              - resources:
+                  requests:
+                    memory: "?*"   # ?* means: must exist and be non-empty
+                    cpu: "?*"
+                  limits:
+                    memory: "?*"
+                    cpu: "?*"

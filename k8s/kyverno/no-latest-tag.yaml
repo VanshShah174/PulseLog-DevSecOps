@@ -1,0 +1,33 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: no-latest-tag
+  annotations:
+    policies.kyverno.io/title: Disallow Latest Tag
+    policies.kyverno.io/severity: high
+    policies.kyverno.io/description: >
+      Requires all container images to use a specific tag instead of :latest.
+      Using :latest is unpredictable — you don't know exactly what image version
+      is running. PulseLog CI tags images with the git SHA (e.g. abc1234).
+spec:
+  validationFailureAction: Enforce   # Enforce = block, Audit = just warn
+  background: true                   # also check existing resources, not just new ones
+  rules:
+    - name: no-latest-tag
+      match:
+        any:
+        - resources:
+            kinds:
+              - Pod
+            namespaces:
+              - pulselog             # only enforce in pulselog namespace
+      validate:
+        message: "Image tag ':latest' is not allowed. Use a specific tag e.g. pulselog-backend:abc1234"
+        pattern:
+          spec:
+            containers:
+              # !*:latest means: image must NOT end with :latest
+              # ?(initContainers) means: also check initContainers if they exist
+              - image: "!*:latest"
+            =(initContainers):
+              - image: "!*:latest"

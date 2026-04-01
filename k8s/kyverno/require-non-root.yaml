@@ -1,0 +1,37 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: require-non-root
+  annotations:
+    policies.kyverno.io/title: Require Non-Root User
+    policies.kyverno.io/severity: high
+    policies.kyverno.io/description: >
+      Requires all containers to run as a non-root user.
+      Running as root means a compromised container gets root access
+      to the node. PulseLog backend runs as appuser, frontend as nginx (UID 101).
+spec:
+  validationFailureAction: Enforce
+  background: true
+  rules:
+    - name: require-non-root
+      match:
+        any:
+        - resources:
+            kinds:
+              - Pod
+            namespaces:
+              - pulselog
+      validate:
+        message: "Containers must not run as root. Set securityContext.runAsNonRoot: true"
+        pattern:
+          spec:
+            # check at pod level first (applies to all containers)
+            securityContext:
+              runAsNonRoot: true
+            containers:
+              # also enforce at container level
+              - securityContext:
+                  runAsNonRoot: true
+            =(initContainers):
+              - securityContext:
+                  runAsNonRoot: true
