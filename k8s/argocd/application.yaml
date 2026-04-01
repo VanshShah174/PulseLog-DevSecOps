@@ -1,0 +1,39 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: pulselog
+  namespace: argocd          # ArgoCD itself lives here
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io  # deletes K8s resources if app is deleted from ArgoCD
+spec:
+
+  # ── WHERE TO DEPLOY ──────────────────────────────────────────
+  destination:
+    server: https://kubernetes.default.svc  # the same cluster ArgoCD is running in
+    namespace: pulselog                     # deploy into pulselog namespace
+
+  # ── WHERE TO PULL FROM (Git) ─────────────────────────────────
+  source:
+    repoURL: https://github.com/VanshShah174/PulseLog-DevSecOps.git
+    targetRevision: devops          # watch the devops branch
+    path: k8s                       # only watch the k8s/ folder
+
+  # ── SYNC POLICY ──────────────────────────────────────────────
+  syncPolicy:
+    automated:
+      prune: true       # delete K8s resources removed from Git
+      selfHeal: true    # revert manual kubectl changes back to Git state
+    syncOptions:
+      - CreateNamespace=true        # create pulselog namespace if missing
+      - PrunePropagationPolicy=foreground  # wait for pods to terminate before pruning
+      - PruneLast=true              # delete old resources after new ones are healthy
+    retry:
+      limit: 3          # retry failed syncs 3 times
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 1m
+
+  # ── HEALTH CHECK ─────────────────────────────────────────────
+  # ArgoCD tracks health of Deployments, StatefulSets, Services etc.
+  # App shows Healthy only when all resources are running correctly
