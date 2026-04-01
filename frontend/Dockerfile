@@ -9,6 +9,9 @@ RUN npm run build
 # ---- Production stage ----
 FROM nginx:1.27-alpine AS production
 
+# Security: upgrade all Alpine packages to get latest CVE patches
+RUN apk upgrade --no-cache
+
 # Security: remove default nginx configs and html
 RUN rm -rf /etc/nginx/conf.d/default.conf /usr/share/nginx/html/*
 
