@@ -1,0 +1,4 @@
+ignore:
+  # DL3018: dumb-init 1.2.5-r3 is the only version available in Alpine 3.23
+  # pinning is done but Hadolint still flags it — suppressed intentionally
+  - DL3018

@@ -1,0 +1,4 @@
+# CVE-2026-33671: picomatch ReDoS in npm's own bundled node_modules
+# Not in our app dependencies — unfixable without upgrading Node.js base image
+# Fixed in picomatch 4.0.4 but npm bundled version cannot be updated externally
+CVE-2026-33671

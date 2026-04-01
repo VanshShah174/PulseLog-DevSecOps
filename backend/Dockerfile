@@ -1,16 +1,16 @@
 # ---- Build stage ----
-FROM node:20-alpine AS build
+FROM node:22-alpine AS build
 WORKDIR /app
 COPY package.json package-lock.json* ./
 RUN apk upgrade --no-cache && \
     npm ci --omit=dev && npm cache clean --force
 
 # ---- Production stage ----
-FROM node:20-alpine AS production
+FROM node:22-alpine AS production
 
 RUN apk upgrade --no-cache && \
     addgroup -S appgroup && adduser -S appuser -G appgroup && \
-    apk --no-cache add dumb-init
+    apk --no-cache add dumb-init=1.2.5-r3
 
 WORKDIR /app
 
