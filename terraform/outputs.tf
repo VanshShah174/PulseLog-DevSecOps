@@ -49,7 +49,22 @@ output "karpenter_role_arn" {
   value       = aws_iam_role.karpenter.arn
 }
 
+output "ebs_csi_role_arn" {
+  description = "IAM role ARN for EBS CSI driver"
+  value       = aws_iam_role.ebs_csi.arn
+}
+
+output "alb_controller_role_arn" {
+  description = "IAM role ARN for AWS Load Balancer Controller"
+  value       = aws_iam_role.alb_controller.arn
+}
+
 output "configure_kubectl" {
   description = "Run this command to configure kubectl after apply"
   value       = "aws eks update-kubeconfig --region ${var.aws_region} --name ${var.cluster_name}"
+}
+
+output "install_alb_controller" {
+  description = "Run this command to install AWS Load Balancer Controller after apply"
+  value       = "helm upgrade --install aws-load-balancer-controller eks/aws-load-balancer-controller --namespace kube-system --set clusterName=${var.cluster_name} --set serviceAccount.create=true --set serviceAccount.name=aws-load-balancer-controller"
 }

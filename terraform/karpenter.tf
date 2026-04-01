@@ -33,9 +33,9 @@ resource "aws_sqs_queue_policy" "karpenter_interruption" {
 # -----------------------------------------------
 locals {
   karpenter_events = {
-    spot_interruption     = { source = ["aws.ec2"],    detail_type = ["EC2 Spot Instance Interruption Warning"] }
-    instance_rebalance    = { source = ["aws.ec2"],    detail_type = ["EC2 Instance Rebalance Recommendation"] }
-    instance_state_change = { source = ["aws.ec2"],    detail_type = ["EC2 Instance State-change Notification"] }
+    spot_interruption     = { source = ["aws.ec2"], detail_type = ["EC2 Spot Instance Interruption Warning"] }
+    instance_rebalance    = { source = ["aws.ec2"], detail_type = ["EC2 Instance Rebalance Recommendation"] }
+    instance_state_change = { source = ["aws.ec2"], detail_type = ["EC2 Instance State-change Notification"] }
     scheduled_change      = { source = ["aws.health"], detail_type = ["AWS Health Event"] }
   }
 }
