@@ -49,6 +49,11 @@ output "karpenter_role_arn" {
   value       = aws_iam_role.karpenter.arn
 }
 
+output "github_actions_role_arn" {
+  description = "IAM role ARN for GitHub Actions OIDC — use in ci.yml as role-to-assume"
+  value       = aws_iam_role.github_actions.arn
+}
+
 output "ebs_csi_role_arn" {
   description = "IAM role ARN for EBS CSI driver"
   value       = aws_iam_role.ebs_csi.arn
