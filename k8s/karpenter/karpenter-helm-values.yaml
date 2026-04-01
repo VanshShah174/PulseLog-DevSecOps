@@ -1,0 +1,28 @@
+# Helm values for Karpenter
+# Install with:
+#   helm upgrade --install karpenter oci://public.ecr.aws/karpenter/karpenter \
+#     --version 1.0.8 \
+#     --namespace karpenter --create-namespace \
+#     -f k8s/karpenter/karpenter-helm-values.yaml
+
+settings:
+  # Fill these from Terraform outputs
+  clusterName: pulselog-eks
+  interruptionQueue: pulselog-karpenter-interruption
+
+controller:
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+# Run Karpenter only on system nodes
+tolerations:
+  - key: CriticalAddonsOnly
+    operator: Exists
+
+nodeSelector:
+  node-role: system

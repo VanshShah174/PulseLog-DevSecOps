@@ -1,0 +1,26 @@
+apiVersion: karpenter.k8s.aws/v1
+kind: EC2NodeClass
+metadata:
+  name: pulselog-nodeclass
+spec:
+  amiFamily: AL2023
+
+  # IAM role that Karpenter-provisioned nodes will use
+  # Value comes from Terraform output: aws_iam_role.eks_nodes.name
+  role: pulselog-eks-node-role
+
+  # Pick private subnets tagged by the EKS cluster
+  subnetSelectorTerms:
+    - tags:
+        kubernetes.io/cluster/pulselog-eks: "owned"
+        kubernetes.io/role/internal-elb: "1"
+
+  # Pick security groups tagged by the EKS cluster
+  securityGroupSelectorTerms:
+    - tags:
+        kubernetes.io/cluster/pulselog-eks: "owned"
+
+  tags:
+    Project: PulseLog
+    Environment: dev
+    ManagedBy: Karpenter

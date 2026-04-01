@@ -1,0 +1,42 @@
+apiVersion: karpenter.sh/v1
+kind: NodePool
+metadata:
+  name: pulselog-nodepool
+spec:
+  template:
+    spec:
+      nodeClassRef:
+        group: karpenter.k8s.aws
+        kind: EC2NodeClass
+        name: pulselog-nodeclass
+
+      requirements:
+        # Only amd64 architecture
+        - key: kubernetes.io/arch
+          operator: In
+          values: ["amd64"]
+
+        # Spot first, On-Demand as fallback
+        - key: karpenter.sh/capacity-type
+          operator: In
+          values: ["spot", "on-demand"]
+
+        # Instance families: t, m, c (general purpose)
+        - key: karpenter.k8s.aws/instance-category
+          operator: In
+          values: ["t", "m", "c"]
+
+        # Generation 3+ only (t3, m5, c5, etc.)
+        - key: karpenter.k8s.aws/instance-generation
+          operator: Gt
+          values: ["2"]
+
+  # Hard cap to prevent runaway costs
+  limits:
+    cpu: "20"
+    memory: 40Gi
+
+  # Auto-consolidate underutilised nodes after 1 minute
+  disruption:
+    consolidationPolicy: WhenEmptyOrUnderutilized
+    consolidateAfter: 1m
