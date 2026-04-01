@@ -8,7 +8,7 @@ RUN npm ci --omit=dev && npm cache clean --force
 FROM node:20-alpine AS production
 
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup && \
-    apk --no-cache add dumb-init
+    apk --no-cache add dumb-init=1.2.5-r3
 
 WORKDIR /app
 
