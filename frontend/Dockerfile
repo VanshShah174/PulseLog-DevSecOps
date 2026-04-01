@@ -9,11 +9,15 @@ RUN npm run build
 # ---- Production stage ----
 FROM nginx:1.27-alpine AS production
 
+# Security: upgrade all Alpine packages to get latest CVE patches
+RUN apk upgrade --no-cache
+
 # Security: remove default nginx configs and html
 RUN rm -rf /etc/nginx/conf.d/default.conf /usr/share/nginx/html/*
 
-# Copy custom nginx config
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+# nginx.conf is NOT baked into the image
+# It is mounted via Kubernetes ConfigMap at runtime
+# For local dev (docker-compose), nginx.conf is bind-mounted
 
 # Copy built frontend assets
 COPY --from=build /app/dist /usr/share/nginx/html
