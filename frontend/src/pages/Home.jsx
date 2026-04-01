@@ -35,7 +35,7 @@ function Home() {
     <div>
       <div className="home-header">
         <h1>Welcome to PulseLog ⚡</h1>
-        <p>A dev blog for builders. Share what you're learning, building, and breaking.</p>
+        <p>A dev blog for builders. Share what you&apos;re learning, building, and breaking.</p>
         <div className="vibe-tags">
           <span className="vibe-tag">🚀 ship it</span>
           <span className="vibe-tag">🔧 built different</span>
@@ -47,7 +47,7 @@ function Home() {
         <div className="empty-state">
           <div className="empty-emoji">📝</div>
           <h3>Nothing here yet</h3>
-          <p>Be the first to share what you're building or learning</p>
+          <p>Be the first to share what you&apos;re building or learning</p>
           <Link to="/create" className="btn btn-primary">
             <HiPlus size={18} />
             Write something
