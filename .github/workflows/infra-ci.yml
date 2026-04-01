@@ -1,0 +1,95 @@
+# ==============================================================
+# PulseLog — Devops Branch Infra CI Pipeline
+# ==============================================================
+# Triggers on push to devops branch (infra/k8s changes)
+#
+# Stages:
+#   1. Checkov         → Terraform security scan
+#   2. Checkov         → K8s manifest security scan
+#   3. kubectl dry-run → validate K8s YAML structure
+# ==============================================================
+
+name: PulseLog Infra CI
+
+on:
+  push:
+    branches: ["devops"]
+  pull_request:
+    branches: ["devops"]
+
+permissions:
+  contents: read
+
+jobs:
+
+  # ============================================================
+  # STAGE 1 — Checkov Terraform Scan
+  # ============================================================
+  checkov-terraform:
+    name: "Checkov — Terraform"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Checkov on Terraform
+        uses: bridgecrewio/checkov-action@v12
+        with:
+          directory: terraform/
+          framework: terraform
+          skip_check: CKV_AWS_39,CKV_AWS_58
+          soft_fail: false
+          output_format: cli
+
+  # ============================================================
+  # STAGE 2 — Checkov K8s Scan
+  # ============================================================
+  checkov-k8s:
+    name: "Checkov — K8s Manifests"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Checkov on K8s manifests
+        uses: bridgecrewio/checkov-action@v12
+        with:
+          directory: k8s/
+          framework: kubernetes
+          # soft fail — some checks don't apply to all resources
+          soft_fail: true
+          output_format: cli
+
+  # ============================================================
+  # STAGE 3 — kubectl dry-run
+  # Validates K8s YAML structure without a real cluster
+  # ============================================================
+  kubectl-validate:
+    name: "kubectl dry-run"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: "v1.32.0"
+
+      - name: Validate namespace
+        run: kubectl apply --dry-run=client -f k8s/namespace.yaml
+
+      - name: Validate postgres manifests
+        run: kubectl apply --dry-run=client -f k8s/postgres/
+
+      - name: Validate backend manifests
+        run: kubectl apply --dry-run=client -f k8s/backend/
+
+      - name: Validate frontend manifests
+        run: kubectl apply --dry-run=client -f k8s/frontend/
+
+      - name: Validate networkpolicy manifests
+        run: kubectl apply --dry-run=client -f k8s/networkpolicy/
+
+      # Gateway API CRDs not available in dry-run without cluster
+      # skipped here — validated on real EKS after CRDs are installed
