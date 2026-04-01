@@ -1,0 +1,18 @@
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: pulselog-ebs-sc
+  labels:
+    app.kubernetes.io/part-of: pulselog
+# EBS CSI driver — provisioner that actually creates the EBS volume on AWS
+provisioner: ebs.csi.eks.amazonaws.com
+parameters:
+  type: gp3         # gp3 is cheaper and faster than gp2
+  encrypted: "true" # encrypt EBS volume at rest
+# Retain — volume survives even if PVC is deleted (protects DB data)
+# Delete — volume deleted when PVC is deleted (use for dev only)
+reclaimPolicy: Retain
+# WaitForFirstConsumer — don't provision volume until pod is scheduled
+# ensures volume is created in same AZ as the pod
+volumeBindingMode: WaitForFirstConsumer
+allowVolumeExpansion: true

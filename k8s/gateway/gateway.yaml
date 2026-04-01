@@ -1,0 +1,26 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: pulselog-gateway
+  namespace: pulselog
+  labels:
+    app.kubernetes.io/part-of: pulselog
+  annotations:
+    # internet-facing — ALB accessible from public internet
+    # use "internal" for private ALB (VPC only)
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    # ip mode — routes traffic directly to pod IPs (better performance)
+    # instance mode routes to node IPs first (extra hop)
+    alb.ingress.kubernetes.io/target-type: ip
+spec:
+  # references GatewayClass — tells controller to use AWS ALB
+  gatewayClassName: aws-alb
+  listeners:
+    - name: http
+      port: 80
+      protocol: HTTP
+      # Same namespace — only HTTPRoutes in pulselog namespace
+      # can attach to this Gateway
+      allowedRoutes:
+        namespaces:
+          from: Same

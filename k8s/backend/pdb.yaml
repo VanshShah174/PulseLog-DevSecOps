@@ -1,0 +1,17 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: pulselog-backend-pdb
+  namespace: pulselog
+  labels:
+    app.kubernetes.io/name: pulselog-backend
+    app.kubernetes.io/part-of: pulselog
+    app.kubernetes.io/component: backend
+spec:
+  # minAvailable: 1 — at least 1 backend pod must be running at all times
+  # Karpenter draining a Spot node will NOT evict the last backend pod
+  # works together with replicas: 2 in deployment
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: pulselog-backend

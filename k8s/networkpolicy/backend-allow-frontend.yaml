@@ -1,0 +1,45 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: backend-allow-frontend
+  namespace: pulselog
+  labels:
+    app.kubernetes.io/part-of: pulselog
+    app.kubernetes.io/component: backend
+spec:
+  # applies to backend pods
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: pulselog-backend
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    # only accept traffic FROM frontend pods on port 5000
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: pulselog-frontend
+      ports:
+        - port: 5000
+          protocol: TCP
+  egress:
+    # allow backend to talk to postgres on port 5432
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: pulselog-postgres
+      ports:
+        - port: 5432
+          protocol: TCP
+    # allow DNS resolution (CoreDNS)
+    # without this, "postgres-svc" name won't resolve
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+      ports:
+        - port: 53
+          protocol: UDP
+        - port: 53
+          protocol: TCP

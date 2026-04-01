@@ -1,0 +1,42 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: frontend-allow-gateway
+  namespace: pulselog
+  labels:
+    app.kubernetes.io/part-of: pulselog
+    app.kubernetes.io/component: frontend
+spec:
+  # applies to frontend pods
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: pulselog-frontend
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    # accept traffic from anywhere on port 8080
+    # Gateway ALB does not have a pod selector — it comes from outside cluster
+    - ports:
+        - port: 8080
+          protocol: TCP
+  egress:
+    # allow frontend to talk to backend-svc on port 5000
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: pulselog-backend
+      ports:
+        - port: 5000
+          protocol: TCP
+    # allow DNS resolution (CoreDNS)
+    # needed to resolve "backend-svc" service name
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+      ports:
+        - port: 53
+          protocol: UDP
+        - port: 53
+          protocol: TCP

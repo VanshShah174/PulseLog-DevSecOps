@@ -1,0 +1,83 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: postgres
+  namespace: pulselog
+  labels:
+    app.kubernetes.io/name: pulselog-postgres
+    app.kubernetes.io/part-of: pulselog
+    app.kubernetes.io/component: database
+spec:
+  serviceName: postgres-svc
+  replicas: 1
+  # Recreate — required for RWO volumes
+  # only 1 pod can mount the volume at a time
+  # pod must fully stop before new one starts
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: pulselog-postgres
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: pulselog-postgres
+        app.kubernetes.io/part-of: pulselog
+        app.kubernetes.io/component: database
+    spec:
+      serviceAccountName: pulselog-postgres
+      automountServiceAccountToken: false
+      # Karpenter — tolerate node disruption (Spot interruption)
+      tolerations:
+        - key: "karpenter.sh/disrupted"
+          operator: "Exists"
+          effect: "NoSchedule"
+      containers:
+        - name: postgres
+          image: postgres:16-alpine
+          ports:
+            - containerPort: 5432
+              protocol: TCP
+          # DB credentials come from backend/secret.yaml
+          # injected as POSTGRES_USER, POSTGRES_PASSWORD, POSTGRES_DB
+          envFrom:
+            - secretRef:
+                name: pulselog-db-secret
+          volumeMounts:
+            - name: postgres-storage
+              mountPath: /var/lib/postgresql/data
+              # subPath prevents postgres from complaining about non-empty mount
+              subPath: pgdata
+          resources:
+            requests:
+              cpu: 250m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            # postgres runs initdb as root then drops — cannot set runAsNonRoot
+            runAsNonRoot: false
+            # postgres needs write access to data directory
+            readOnlyRootFilesystem: false
+          # liveness — is postgres process alive?
+          # if this fails → container is restarted
+          livenessProbe:
+            exec:
+              command: ["pg_isready", "-U", "postgres", "-d", "pulselog_db"]
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          # readiness — is postgres ready to accept connections?
+          # if this fails → pod removed from Service endpoints (no traffic sent)
+          readinessProbe:
+            exec:
+              command: ["pg_isready", "-U", "postgres", "-d", "pulselog_db"]
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
+      volumes:
+        - name: postgres-storage
+          persistentVolumeClaim:
+            claimName: postgres-pvc

@@ -1,0 +1,16 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: pulselog-frontend-pdb
+  namespace: pulselog
+  labels:
+    app.kubernetes.io/name: pulselog-frontend
+    app.kubernetes.io/part-of: pulselog
+    app.kubernetes.io/component: frontend
+spec:
+  # minAvailable: 1 — at least 1 frontend pod must be running at all times
+  # Karpenter draining a Spot node will NOT evict the last frontend pod
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: pulselog-frontend

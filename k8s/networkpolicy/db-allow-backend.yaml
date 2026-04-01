@@ -1,0 +1,26 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: db-allow-backend
+  namespace: pulselog
+  labels:
+    app.kubernetes.io/part-of: pulselog
+    app.kubernetes.io/component: database
+spec:
+  # applies to postgres pods
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: pulselog-postgres
+  policyTypes:
+    - Ingress
+  ingress:
+    # only accept traffic FROM backend pods on port 5432
+    # frontend cannot directly reach postgres
+    # any other pod cannot reach postgres
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: pulselog-backend
+      ports:
+        - port: 5432
+          protocol: TCP

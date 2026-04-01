@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: postgres-pvc
+  namespace: pulselog
+  labels:
+    app.kubernetes.io/part-of: pulselog
+    app.kubernetes.io/component: database
+spec:
+  # ReadWriteOnce — only one node can mount this volume at a time
+  # correct for postgres (single writer)
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: pulselog-ebs-sc
+  resources:
+    requests:
+      storage: 10Gi
