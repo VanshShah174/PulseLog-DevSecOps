@@ -25,6 +25,10 @@ spec:
     spec:
       serviceAccountName: pulselog-postgres
       automountServiceAccountToken: false
+
+      securityContext:
+        runAsNonRoot: false
+
       # Karpenter — tolerate node disruption (Spot interruption)
       tolerations:
         - key: "karpenter.sh/disrupted"

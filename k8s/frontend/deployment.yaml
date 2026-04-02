@@ -22,6 +22,9 @@ spec:
       serviceAccountName: pulselog-frontend
       automountServiceAccountToken: false
 
+      securityContext:
+        runAsNonRoot: true
+
       # Karpenter — tolerate Spot node disruption
       tolerations:
         - key: "karpenter.sh/disrupted"
