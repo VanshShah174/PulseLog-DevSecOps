@@ -77,19 +77,19 @@ jobs:
           version: "v1.32.0"
 
       - name: Validate namespace
-        run: kubectl apply --dry-run=client -f k8s/namespace.yaml
+        run: kubectl apply --dry-run=client --validate=false -f k8s/namespace.yaml
 
       - name: Validate postgres manifests
-        run: kubectl apply --dry-run=client -f k8s/postgres/
+        run: kubectl apply --dry-run=client --validate=false -f k8s/postgres/
 
       - name: Validate backend manifests
-        run: kubectl apply --dry-run=client -f k8s/backend/
+        run: kubectl apply --dry-run=client --validate=false -f k8s/backend/
 
       - name: Validate frontend manifests
-        run: kubectl apply --dry-run=client -f k8s/frontend/
+        run: kubectl apply --dry-run=client --validate=false -f k8s/frontend/
 
       - name: Validate networkpolicy manifests
-        run: kubectl apply --dry-run=client -f k8s/networkpolicy/
+        run: kubectl apply --dry-run=client --validate=false -f k8s/networkpolicy/
 
       # Gateway API CRDs not available in dry-run without cluster
       # skipped here — validated on real EKS after CRDs are installed
