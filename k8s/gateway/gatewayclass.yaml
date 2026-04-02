@@ -8,4 +8,4 @@ spec:
   # controllerName tells K8s which controller handles this GatewayClass
   # AWS Load Balancer Controller watches for this exact string
   # and creates/manages ALBs for any Gateway referencing this class
-  controllerName: eks.amazonaws.com/alb
+  controllerName: gateway.k8s.aws/alb

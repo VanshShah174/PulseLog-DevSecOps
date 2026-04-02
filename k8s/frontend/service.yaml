@@ -8,12 +8,11 @@ metadata:
     app.kubernetes.io/part-of: pulselog
     app.kubernetes.io/component: frontend
 spec:
-  # ClusterIP — internal only
-  # Gateway HTTPRoute routes /* traffic to this service
-  type: ClusterIP
+  # LoadBalancer — creates an AWS NLB to expose frontend to the internet
+  type: LoadBalancer
   selector:
     app.kubernetes.io/name: pulselog-frontend
   ports:
-    - port: 8080
+    - port: 80
       targetPort: 8080
       protocol: TCP
