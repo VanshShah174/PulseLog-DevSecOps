@@ -1,13 +1,32 @@
 # -----------------------------------------------
+# KMS Key — encrypts Secrets Manager secrets
+# CKV_AWS_149: must use customer-managed CMK, not default
+# -----------------------------------------------
+resource "aws_kms_key" "secrets" {
+  description             = "KMS key for encrypting Secrets Manager secrets"
+  deletion_window_in_days = 10
+  enable_key_rotation     = true
+
+  tags = {
+    Name = "pulselog-secrets-key"
+  }
+}
+
+resource "aws_kms_alias" "secrets" {
+  name          = "alias/pulselog-secrets"
+  target_key_id = aws_kms_key.secrets.key_id
+}
+
+# -----------------------------------------------
 # AWS Secrets Manager — PulseLog DB Credentials
 # Replaces static K8s Secret (k8s/backend/secret.yaml)
 # ESO syncs this into a K8s Secret automatically
 # -----------------------------------------------
-
 resource "aws_secretsmanager_secret" "pulselog_db" {
   name                    = "pulselog/db-credentials"
   description             = "PostgreSQL credentials for PulseLog backend"
   recovery_window_in_days = 7
+  kms_key_id              = aws_kms_key.secrets.id
 
   tags = {
     Name = "pulselog-db-credentials"
@@ -65,6 +84,16 @@ resource "aws_iam_policy" "external_secrets" {
         ]
         # Scoped to only the PulseLog DB secret — least privilege
         Resource = aws_secretsmanager_secret.pulselog_db.arn
+      },
+      {
+        Sid    = "KMSDecrypt"
+        Effect = "Allow"
+        Action = [
+          "kms:Decrypt",
+          "kms:DescribeKey",
+        ]
+        # ESO needs to decrypt the secret using the CMK
+        Resource = aws_kms_key.secrets.arn
       }
     ]
   })
