@@ -73,3 +73,18 @@ output "install_alb_controller" {
   description = "Run this command to install AWS Load Balancer Controller after apply"
   value       = "helm upgrade --install aws-load-balancer-controller eks/aws-load-balancer-controller --namespace kube-system --set clusterName=${var.cluster_name} --set serviceAccount.create=true --set serviceAccount.name=aws-load-balancer-controller"
 }
+
+output "secrets_manager_secret_arn" {
+  description = "ARN of the Secrets Manager secret for PulseLog DB credentials"
+  value       = aws_secretsmanager_secret.pulselog_db.arn
+}
+
+output "external_secrets_role_arn" {
+  description = "IAM role ARN for External Secrets Operator"
+  value       = aws_iam_role.external_secrets.arn
+}
+
+output "install_external_secrets" {
+  description = "Run this command to install External Secrets Operator after apply"
+  value       = "helm install external-secrets external-secrets/external-secrets --namespace external-secrets --create-namespace --set serviceAccount.name=external-secrets"
+}
