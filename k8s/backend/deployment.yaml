@@ -8,7 +8,7 @@ metadata:
     app.kubernetes.io/part-of: pulselog
     app.kubernetes.io/component: backend
 spec:
-  replicas: 2
+  # replicas managed by HPA (k8s/backend/hpa.yaml)
   selector:
     matchLabels:
       app.kubernetes.io/name: pulselog-backend
