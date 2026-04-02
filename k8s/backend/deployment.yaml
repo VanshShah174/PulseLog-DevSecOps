@@ -56,7 +56,7 @@ spec:
         - name: backend
           # CI pipeline replaces this placeholder with real ECR image tag
           # e.g. 123456789.dkr.ecr.us-east-1.amazonaws.com/pulselog-backend:abc123
-          image: BACKEND_IMAGE_PLACEHOLDER
+          image: 207446234524.dkr.ecr.us-east-1.amazonaws.com/pulselog-backend:ca90804
           ports:
             - containerPort: 5000
               protocol: TCP
