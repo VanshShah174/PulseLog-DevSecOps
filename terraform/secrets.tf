@@ -1,11 +1,54 @@
 # -----------------------------------------------
 # KMS Key — encrypts Secrets Manager secrets
-# CKV_AWS_149: must use customer-managed CMK, not default
+# CKV_AWS_149: customer-managed CMK
+# CKV2_AWS_64: explicit key policy
 # -----------------------------------------------
+data "aws_caller_identity" "current" {}
+
 resource "aws_kms_key" "secrets" {
   description             = "KMS key for encrypting Secrets Manager secrets"
   deletion_window_in_days = 10
   enable_key_rotation     = true
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "EnableIAMPolicies"
+        Effect = "Allow"
+        Principal = {
+          AWS = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"
+        }
+        Action   = "kms:*"
+        Resource = "*"
+      },
+      {
+        Sid    = "AllowSecretsManagerUse"
+        Effect = "Allow"
+        Principal = {
+          Service = "secretsmanager.amazonaws.com"
+        }
+        Action = [
+          "kms:Decrypt",
+          "kms:GenerateDataKey",
+          "kms:DescribeKey",
+        ]
+        Resource = "*"
+      },
+      {
+        Sid    = "AllowESODecrypt"
+        Effect = "Allow"
+        Principal = {
+          AWS = aws_iam_role.external_secrets.arn
+        }
+        Action = [
+          "kms:Decrypt",
+          "kms:DescribeKey",
+        ]
+        Resource = "*"
+      }
+    ]
+  })
 
   tags = {
     Name = "pulselog-secrets-key"
