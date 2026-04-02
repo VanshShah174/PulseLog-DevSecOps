@@ -42,7 +42,7 @@ A full-stack developer blog platform engineered to production standards on AWS â
 ## ğŸ— Architecture Overview
 
 <p align="center">
-  <img src="images/pulselog-architecture.png" alt="PulseLog AWS EKS Architecture" width="900" />
+  <img src="images/pulselog-architecture-v2.png" alt="PulseLog AWS EKS Architecture" width="900" />
 </p>
 
 ```
