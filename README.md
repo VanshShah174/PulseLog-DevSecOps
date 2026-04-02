@@ -25,6 +25,7 @@ A full-stack developer blog platform engineered to production standards on AWS �
 - [Security Layers](#-security-layers)
 - [Secrets Management](#-secrets-management)
 - [Karpenter — Node Auto-Provisioning](#-karpenter--node-auto-provisioning)
+- [HPA — Pod Auto-Scaling](#-hpa--pod-auto-scaling)
 - [Network Policies](#-network-policies)
 - [Kyverno — Policy Enforcement](#-kyverno--policy-enforcement)
 - [Branch Strategy](#-branch-strategy)
@@ -61,7 +62,7 @@ A full-stack developer blog platform engineered to production standards on AWS �
 │  ┌──────────┐    ┌──────────┐    ┌──────────┐    ┌──────────┐     │
 │  │ Frontend │◄──►│ Backend  │◄──►│ Postgres │    │ Karpenter│     │
 │  │ (React)  │    │ (Node.js)│    │ (StatefulSet) │ (Spot)   │     │
-│  │ 2 replicas    │ 2 replicas    │ 1 replica│    │          │     │
+│  │ HPA 2→4      │ HPA 2→4      │ 1 replica│    │          │     │
 │  └──────────┘    └──────────┘    └──────────┘    └──────────┘     │
 │                                                                     │
 │  ┌──────────┐    ┌──────────┐    ┌──────────┐                     │
@@ -91,6 +92,7 @@ A full-stack developer blog platform engineered to production standards on AWS �
 | **CI** | GitHub Actions | 8-stage pipeline with security scanning |
 | **CD** | ArgoCD | GitOps auto-sync from devops branch |
 | **Node Scaling** | Karpenter | Spot-first auto-provisioning with consolidation |
+| **Pod Scaling** | HPA + Metrics Server | CPU-based auto-scaling (2–4 replicas) |
 | **Secrets** | AWS Secrets Manager + ESO | KMS-encrypted, Pod Identity, auto-synced |
 | **Policy Engine** | Kyverno | Enforce non-root, no :latest, require resources |
 | **Network Security** | K8s NetworkPolicy | Zero-trust pod-to-pod communication |
@@ -136,8 +138,8 @@ A full-stack developer blog platform engineered to production standards on AWS �
 │
 ├── k8s/                          # Kubernetes manifests (ArgoCD watches this)
 │   ├── namespace.yaml            # pulselog namespace
-│   ├── backend/                  # Deployment, Service, ServiceAccount, PDB
-│   ├── frontend/                 # Deployment, Service, ServiceAccount, PDB, ConfigMap
+│   ├── backend/                  # Deployment, Service, ServiceAccount, PDB, HPA
+│   ├── frontend/                 # Deployment, Service, ServiceAccount, PDB, ConfigMap, HPA
 │   ├── postgres/                 # StatefulSet, Service, PVC, StorageClass
 │   ├── gateway/                  # Gateway, GatewayClass, HTTPRoute
 │   ├── karpenter/                # NodePool, EC2NodeClass, Helm values
@@ -168,7 +170,7 @@ VPC (10.0.0.0/16)
 - **Version**: Kubernetes 1.32
 - **Auth**: API mode with access entries (no aws-auth ConfigMap)
 - **Logging**: API, audit, authenticator, controller manager, scheduler
-- **Addons**: Pod Identity Agent, CoreDNS, kube-proxy, VPC CNI, EBS CSI
+- **Addons**: Pod Identity Agent, CoreDNS, kube-proxy, VPC CNI, EBS CSI, Metrics Server
 
 ### IAM — Pod Identity (not IRSA)
 All pod-level AWS authentication uses **EKS Pod Identity** — the modern replacement for IRSA. No OIDC provider needed for pods, no service account annotations.
@@ -269,8 +271,8 @@ Developer pushes to main
 
 | Component | Type | Replicas | Image |
 |-----------|------|----------|-------|
-| Frontend | Deployment | 2 | `pulselog-frontend` (React + Nginx) |
-| Backend | Deployment | 2 | `pulselog-backend` (Node.js + Express) |
+| Frontend | Deployment | 2–4 (HPA) | `pulselog-frontend` (React + Nginx) |
+| Backend | Deployment | 2–4 (HPA) | `pulselog-backend` (Node.js + Express) |
 | PostgreSQL | StatefulSet | 1 | `postgres:16-alpine` |
 
 ### Traffic Flow
@@ -398,6 +400,38 @@ consolidateAfter: 1m
 
 ---
 
+## 📈 HPA — Pod Auto-Scaling
+
+Horizontal Pod Autoscaler automatically adjusts replica counts based on CPU utilization, working in tandem with Karpenter and PDBs.
+
+```
+Traffic spike → CPU rises above 70%
+    → HPA scales pods (2 → 4)
+        → Pods don't fit on existing nodes
+            → Karpenter launches new Spot node (~30s)
+                → Pods scheduled, traffic handled ✅
+
+Traffic drops → CPU falls below 70%
+    → HPA scales pods down (4 → 2)
+        → Node becomes underutilized
+            → Karpenter drains and terminates node
+                → PDB ensures minAvailable: 1 during drain ✅
+```
+
+| Deployment | Min | Max | CPU Target | Scale Up | Scale Down |
+|-----------|-----|-----|-----------|----------|------------|
+| Backend | 2 | 4 | 70% | 2 pods/60s, stabilize 30s | 1 pod/60s, stabilize 5min |
+| Frontend | 2 | 4 | 70% | 2 pods/60s, stabilize 30s | 1 pod/60s, stabilize 5min |
+
+**Design decisions:**
+- Scale up fast (30s stabilization) — respond to traffic spikes quickly
+- Scale down slow (5min stabilization) — avoid flapping during intermittent load
+- Max 4 replicas — cost-conscious for dev, fits on existing nodes
+- Replica count removed from Deployments — HPA owns it, prevents ArgoCD conflicts
+- Metrics Server provides CPU/memory data to HPA
+
+---
+
 ## 🌐 Network Policies
 
 Zero-trust networking — pods can only communicate with explicitly allowed peers.
@@ -505,17 +539,24 @@ helm install external-secrets external-secrets/external-secrets \
   --namespace external-secrets --create-namespace \
   --set serviceAccount.name=external-secrets
 
-# 7. Install ArgoCD
+# 7. Install Metrics Server (required for HPA)
+kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
+
+# 8. Install ArgoCD
 kubectl create namespace argocd
 kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
 
-# 8. Apply ArgoCD Application (triggers full sync)
+# 8. Install ArgoCD
+kubectl create namespace argocd
+kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+
+# 9. Apply ArgoCD Application (triggers full sync)
 kubectl apply -f k8s/argocd/application.yaml
 
-# 9. Apply Karpenter node config
+# 10. Apply Karpenter node config
 kubectl apply -f k8s/karpenter/
 
-# 10. Apply Kyverno policies
+# 11. Apply Kyverno policies
 kubectl apply -f k8s/kyverno/
 ```
 
@@ -538,6 +579,7 @@ docker-compose up --build
 |-----------|--------|
 | Terraform (VPC, EKS, ECR, IAM, KMS) | ✅ Complete |
 | Karpenter (Spot auto-provisioning) | ✅ Complete |
+| HPA (CPU-based pod auto-scaling) | ✅ Complete |
 | CI Pipeline (8-stage GitHub Actions) | ✅ All green |
 | CD Pipeline (ArgoCD GitOps) | ✅ Auto-syncing |
 | Kyverno (3 security policies) | ✅ Enforcing |
