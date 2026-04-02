@@ -11,6 +11,10 @@
 
 A full-stack developer blog platform engineered to production standards on AWS — automated CI/CD, policy enforcement, KMS-encrypted secrets management, Spot-optimized node provisioning, and zero-trust networking. Every layer, from Terraform to runtime, is security-hardened and fully auditable.
 
+<p align="center">
+  <img src="images/pulselog-app.png" alt="PulseLog Application" width="800" />
+</p>
+
 ---
 
 ## 📋 Table of Contents
@@ -26,6 +30,7 @@ A full-stack developer blog platform engineered to production standards on AWS �
 - [Secrets Management](#-secrets-management)
 - [Karpenter — Node Auto-Provisioning](#-karpenter--node-auto-provisioning)
 - [HPA — Pod Auto-Scaling](#-hpa--pod-auto-scaling)
+- [Observability — Prometheus & Grafana](#-observability--prometheus--grafana)
 - [Network Policies](#-network-policies)
 - [Kyverno — Policy Enforcement](#-kyverno--policy-enforcement)
 - [Branch Strategy](#-branch-strategy)
@@ -70,9 +75,10 @@ A full-stack developer blog platform engineered to production standards on AWS �
 │  │ Policies │    │ Policies │    │ Secrets  │                     │
 │  └──────────┘    └──────────┘    └──────────┘                     │
 │                                       │                             │
-│                                       ▼                             │
-│                              AWS Secrets Manager                    │
-│                              (KMS CMK encrypted)                    │
+│  ┌──────────┐    ┌──────────┐         ▼                            │
+│  │Prometheus│    │ Grafana  │  AWS Secrets Manager                 │
+│  │(metrics) │───►│(dashboards)  (KMS CMK encrypted)               │
+│  └──────────┘    └──────────┘                                      │
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -93,6 +99,7 @@ A full-stack developer blog platform engineered to production standards on AWS �
 | **CD** | ArgoCD | GitOps auto-sync from devops branch |
 | **Node Scaling** | Karpenter | Spot-first auto-provisioning with consolidation |
 | **Pod Scaling** | HPA + Metrics Server | CPU-based auto-scaling (2–4 replicas) |
+| **Observability** | Prometheus + Grafana | Cluster metrics, dashboards, alerting |
 | **Secrets** | AWS Secrets Manager + ESO | KMS-encrypted, Pod Identity, auto-synced |
 | **Policy Engine** | Kyverno | Enforce non-root, no :latest, require resources |
 | **Network Security** | K8s NetworkPolicy | Zero-trust pod-to-pod communication |
@@ -221,6 +228,10 @@ Push to main
 - **Scan before push** — Trivy scans the built image before it's published to ECR. Fails on CRITICAL/HIGH CVEs.
 - **GitOps trigger** — Stage 8 updates image tags in `k8s/` manifests on the `devops` branch, which triggers ArgoCD.
 
+<p align="center">
+  <img src="images/ci-pipeline.png" alt="CI Pipeline — All Green" width="800" />
+</p>
+
 ### Infra CI Pipeline (devops branch)
 
 A separate pipeline runs on the `devops` branch for infrastructure changes:
@@ -262,6 +273,10 @@ Developer pushes to main
     → ArgoCD syncs to EKS
     → New pods roll out with updated image
 ```
+
+<p align="center">
+  <img src="images/argocd-sync.png" alt="ArgoCD Sync Status" width="800" />
+</p>
 
 ---
 
@@ -432,6 +447,50 @@ Traffic drops → CPU falls below 70%
 
 ---
 
+## 📊 Observability — Prometheus & Grafana
+
+Full-stack monitoring with zero extra AWS cost — runs entirely inside the cluster.
+
+```
+Every pod + node on EKS
+        │
+        ▼
+Prometheus (scrapes metrics every 15s)
+        │   CPU, memory, network, HPA state,
+        │   pod restarts, node utilization
+        ▼
+Grafana (pre-built dashboards)
+        │   Cluster overview, namespace breakdown,
+        │   node metrics, pod resource usage
+        ▼
+Access via: kubectl port-forward svc/prometheus-grafana -n monitoring 3000:80
+```
+
+**What's included (kube-prometheus-stack):**
+
+| Component | Purpose |
+|-----------|---------|
+| Prometheus | Time-series metrics collection and storage (7-day retention) |
+| Grafana | Dashboard visualization with pre-built K8s dashboards |
+| Alertmanager | Alert routing and notification (extensible) |
+| Node Exporter | Host-level metrics (CPU, memory, disk per node) |
+| Kube State Metrics | K8s object metrics (deployments, pods, HPAs) |
+
+**Key dashboards:**
+- Kubernetes / Compute Resources / Cluster — overall cluster health
+- Kubernetes / Compute Resources / Namespace (Pods) — per-pod CPU/memory in `pulselog`
+- Node Exporter / Nodes — node-level resource utilization
+
+<p align="center">
+  <img src="images/grafana-cluster-overview.png" alt="Grafana Cluster Overview" width="800" />
+</p>
+
+<p align="center">
+  <img src="images/grafana-pulse-log-pods.png" alt="Grafana PulseLog Pods" width="800" />
+</p>
+
+---
+
 ## 🌐 Network Policies
 
 Zero-trust networking — pods can only communicate with explicitly allowed peers.
@@ -542,21 +601,27 @@ helm install external-secrets external-secrets/external-secrets \
 # 7. Install Metrics Server (required for HPA)
 kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
 
-# 8. Install ArgoCD
+# 8. Install Prometheus + Grafana
+helm install prometheus prometheus-community/kube-prometheus-stack \
+  --namespace monitoring --create-namespace \
+  --set grafana.adminPassword=PulseLog2026 \
+  --wait --timeout 5m
+
+# 9. Install ArgoCD
 kubectl create namespace argocd
 kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
 
-# 8. Install ArgoCD
+# 9. Install ArgoCD
 kubectl create namespace argocd
 kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
 
-# 9. Apply ArgoCD Application (triggers full sync)
+# 10. Apply ArgoCD Application (triggers full sync)
 kubectl apply -f k8s/argocd/application.yaml
 
-# 10. Apply Karpenter node config
+# 11. Apply Karpenter node config
 kubectl apply -f k8s/karpenter/
 
-# 11. Apply Kyverno policies
+# 12. Apply Kyverno policies
 kubectl apply -f k8s/kyverno/
 ```
 
@@ -580,6 +645,7 @@ docker-compose up --build
 | Terraform (VPC, EKS, ECR, IAM, KMS) | ✅ Complete |
 | Karpenter (Spot auto-provisioning) | ✅ Complete |
 | HPA (CPU-based pod auto-scaling) | ✅ Complete |
+| Observability (Prometheus + Grafana) | ✅ Complete |
 | CI Pipeline (8-stage GitHub Actions) | ✅ All green |
 | CD Pipeline (ArgoCD GitOps) | ✅ Auto-syncing |
 | Kyverno (3 security policies) | ✅ Enforcing |
