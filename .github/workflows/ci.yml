@@ -286,8 +286,8 @@ jobs:
           IMAGE_TAG=${{ steps.vars.outputs.image_tag }}
           ECR_URL=${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com
 
-          # replace placeholder with real ECR image URL + tag
-          sed -i "s|BACKEND_IMAGE_PLACEHOLDER|${ECR_URL}/pulselog-backend:${IMAGE_TAG}|g" \
+          # replace any existing image (placeholder or previous ECR tag)
+          sed -i "s|image: .*pulselog-backend.*|image: ${ECR_URL}/pulselog-backend:${IMAGE_TAG}|g" \
             k8s/backend/deployment.yaml
 
           echo "Backend image updated to: ${ECR_URL}/pulselog-backend:${IMAGE_TAG}"
@@ -297,8 +297,8 @@ jobs:
           IMAGE_TAG=${{ steps.vars.outputs.image_tag }}
           ECR_URL=${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com
 
-          # replace placeholder with real ECR image URL + tag
-          sed -i "s|FRONTEND_IMAGE_PLACEHOLDER|${ECR_URL}/pulselog-frontend:${IMAGE_TAG}|g" \
+          # replace any existing image (placeholder or previous ECR tag)
+          sed -i "s|image: .*pulselog-frontend.*|image: ${ECR_URL}/pulselog-frontend:${IMAGE_TAG}|g" \
             k8s/frontend/deployment.yaml
 
           echo "Frontend image updated to: ${ECR_URL}/pulselog-frontend:${IMAGE_TAG}"
