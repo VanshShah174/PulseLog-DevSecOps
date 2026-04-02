@@ -32,3 +32,5 @@ coverage/
 *.tfstate.backup
 *.tfvars.backup
 secrets.tfvars
+tfplan
+*.tfplan
