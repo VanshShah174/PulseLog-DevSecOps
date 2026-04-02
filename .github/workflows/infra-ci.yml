@@ -65,53 +65,20 @@ jobs:
   # Validates K8s YAML structure without a real cluster
   # ============================================================
   kubectl-validate:
-    name: "kubectl dry-run"
+    name: "K8s manifest validation"
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Install kubectl
-        uses: azure/setup-kubectl@v3
-        with:
-          version: "v1.32.0"
-
-      - name: Set up dummy kubeconfig for dry-run
+      - name: Install kubeconform
         run: |
-          mkdir -p $HOME/.kube
-          cat > $HOME/.kube/config <<EOF
-          apiVersion: v1
-          kind: Config
-          clusters:
-          - cluster:
-              server: https://127.0.0.1
-            name: dummy
-          contexts:
-          - context:
-              cluster: dummy
-              user: dummy
-            name: dummy
-          current-context: dummy
-          users:
-          - name: dummy
-            user:
-              token: dummy
-          EOF
+          curl -sL https://github.com/yannh/kubeconform/releases/latest/download/kubeconform-linux-amd64.tar.gz | tar xz
+          sudo mv kubeconform /usr/local/bin/
 
-      - name: Validate namespace
-        run: kubectl apply --dry-run=client --validate=false -f k8s/namespace.yaml
-
-      - name: Validate postgres manifests
-        run: kubectl apply --dry-run=client --validate=false -f k8s/postgres/
-
-      - name: Validate backend manifests
-        run: kubectl apply --dry-run=client --validate=false -f k8s/backend/
-
-      - name: Validate frontend manifests
-        run: kubectl apply --dry-run=client --validate=false -f k8s/frontend/
-
-      - name: Validate networkpolicy manifests
-        run: kubectl apply --dry-run=client --validate=false -f k8s/networkpolicy/
-
-      # Gateway API CRDs not available in dry-run without cluster
-      # skipped here — validated on real EKS after CRDs are installed
+      - name: Validate K8s manifests
+        run: |
+          kubeconform -strict -ignore-missing-schemas -summary \
+            -ignore-filename-pattern "INSTALL.md" \
+            -ignore-filename-pattern "helm-values" \
+            k8s/
