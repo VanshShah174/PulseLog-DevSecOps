@@ -6,6 +6,7 @@ metadata:
   finalizers:
     - resources-finalizer.argocd.argoproj.io  # deletes K8s resources if app is deleted from ArgoCD
 spec:
+  project: default
 
   # ── WHERE TO DEPLOY ──────────────────────────────────────────
   destination:
@@ -17,6 +18,8 @@ spec:
     repoURL: https://github.com/VanshShah174/PulseLog-DevSecOps.git
     targetRevision: devops          # watch the devops branch
     path: k8s                       # only watch the k8s/ folder
+    directory:
+      recurse: true                 # scan subdirectories (postgres/, backend/, frontend/, etc.)
 
   # ── SYNC POLICY ──────────────────────────────────────────────
   syncPolicy:

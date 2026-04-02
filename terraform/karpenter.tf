@@ -110,6 +110,25 @@ resource "aws_iam_policy" "karpenter" {
         Resource = aws_iam_role.eks_nodes.arn
       },
       {
+        Sid    = "IAMInstanceProfile"
+        Effect = "Allow"
+        Action = [
+          "iam:AddRoleToInstanceProfile",
+          "iam:CreateInstanceProfile",
+          "iam:DeleteInstanceProfile",
+          "iam:GetInstanceProfile",
+          "iam:RemoveRoleFromInstanceProfile",
+          "iam:TagInstanceProfile",
+        ]
+        Resource = "*"
+      },
+      {
+        Sid    = "SSMGetParameter"
+        Effect = "Allow"
+        Action = ["ssm:GetParameter"]
+        Resource = "arn:aws:ssm:*:*:parameter/aws/service/*"
+      },
+      {
         Sid    = "SQSInterruption"
         Effect = "Allow"
         Action = [

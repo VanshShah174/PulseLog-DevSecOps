@@ -3,7 +3,10 @@ kind: EC2NodeClass
 metadata:
   name: pulselog-nodeclass
 spec:
+  # Use AL2023 AMI (Amazon Linux 2023) for EKS 1.32
   amiFamily: AL2023
+  amiSelectorTerms:
+    - id: ami-08be36ab0027918b1
 
   # IAM role that Karpenter-provisioned nodes will use
   # Value comes from Terraform output: aws_iam_role.eks_nodes.name
