@@ -76,6 +76,28 @@ jobs:
         with:
           version: "v1.32.0"
 
+      - name: Set up dummy kubeconfig for dry-run
+        run: |
+          mkdir -p $HOME/.kube
+          cat > $HOME/.kube/config <<EOF
+          apiVersion: v1
+          kind: Config
+          clusters:
+          - cluster:
+              server: https://127.0.0.1
+            name: dummy
+          contexts:
+          - context:
+              cluster: dummy
+              user: dummy
+            name: dummy
+          current-context: dummy
+          users:
+          - name: dummy
+            user:
+              token: dummy
+          EOF
+
       - name: Validate namespace
         run: kubectl apply --dry-run=client --validate=false -f k8s/namespace.yaml
 
