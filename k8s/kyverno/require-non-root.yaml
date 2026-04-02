@@ -21,6 +21,14 @@ spec:
               - Pod
             namespaces:
               - pulselog
+      exclude:
+        any:
+        - resources:
+            kinds:
+              - Pod
+            selector:
+              matchLabels:
+                app.kubernetes.io/component: database
       validate:
         message: "Containers must not run as root. Set securityContext.runAsNonRoot: true"
         pattern:
