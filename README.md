@@ -608,12 +608,8 @@ kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/late
 # 8. Install Prometheus + Grafana
 helm install prometheus prometheus-community/kube-prometheus-stack \
   --namespace monitoring --create-namespace \
-  --set grafana.adminPassword=PulseLog2026 \
+  --set grafana.adminPassword= \
   --wait --timeout 5m
-
-# 9. Install ArgoCD
-kubectl create namespace argocd
-kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
 
 # 9. Install ArgoCD
 kubectl create namespace argocd
@@ -662,5 +658,5 @@ docker-compose up --build
 ---
 
 <p align="center">
-  Built with ☕ and a lot of YAML
+  Built with ☕ and a lot of YAML by Vansh Shah
 </p>
