@@ -41,6 +41,10 @@ A full-stack developer blog platform engineered to production standards on AWS �
 
 ## 🏗 Architecture Overview
 
+<p align="center">
+  <img src="images/pulselog-architecture.png" alt="PulseLog AWS EKS Architecture" width="900" />
+</p>
+
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
 │                        GitHub Repository                            │
