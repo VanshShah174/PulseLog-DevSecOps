@@ -35,7 +35,7 @@ spec:
         - name: frontend
           # CI pipeline replaces this placeholder with real ECR image tag
           # e.g. 123456789.dkr.ecr.us-east-1.amazonaws.com/pulselog-frontend:abc123
-          image: 207446234524.dkr.ecr.us-east-1.amazonaws.com/pulselog-frontend:8b11699
+          image: 207446234524.dkr.ecr.us-east-1.amazonaws.com/pulselog-frontend:34432af
           ports:
             - containerPort: 8080
               protocol: TCP
