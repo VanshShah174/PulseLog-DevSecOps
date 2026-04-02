@@ -6,7 +6,7 @@ function Navbar() {
     <nav className="navbar">
       <div className="navbar-inner">
         <Link to="/" className="navbar-logo">
-          <span>⚡</span> PulseLog
+          <span>⚡</span> PulseLog <small style={{fontSize: '0.5em', opacity: 0.7}}>v2.0</small>
         </Link>
         <div className="navbar-actions">
           <Link to="/create" className="btn btn-primary">
