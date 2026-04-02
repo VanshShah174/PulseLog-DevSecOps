@@ -35,11 +35,12 @@ function Home() {
     <div>
       <div className="home-header">
         <h1>Welcome to PulseLog ⚡</h1>
-        <p>A dev blog for builders. Share what you&apos;re learning, building, and breaking.</p>
+        <p>Deployed on AWS EKS with full DevSecOps pipeline. Powered by ArgoCD GitOps.</p>
         <div className="vibe-tags">
           <span className="vibe-tag">🚀 ship it</span>
           <span className="vibe-tag">🔧 built different</span>
           <span className="vibe-tag">💡 learn in public</span>
+          <span className="vibe-tag">☸️ running on EKS</span>
         </div>
       </div>
 
