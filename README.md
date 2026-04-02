@@ -7,7 +7,7 @@
   <img src="https://img.shields.io/badge/Kubernetes-326CE5?style=for-the-badge&logo=kubernetes&logoColor=white" />
 </p>
 
-# PulseLog — Production-Grade DevSecOps on AWS EKS
+# PulseLog — Secure, Scalable DevSecOps on AWS EKS
 
 A full-stack developer blog platform engineered to production standards on AWS — automated CI/CD, policy enforcement, KMS-encrypted secrets management, Spot-optimized node provisioning, and zero-trust networking. Every layer, from Terraform to runtime, is security-hardened and fully auditable.
 
