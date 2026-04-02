@@ -5,7 +5,7 @@ metadata:
   labels:
     app.kubernetes.io/part-of: pulselog
 # EBS CSI driver — provisioner that actually creates the EBS volume on AWS
-provisioner: ebs.csi.eks.amazonaws.com
+provisioner: ebs.csi.aws.com
 parameters:
   type: gp3         # gp3 is cheaper and faster than gp2
   encrypted: "true" # encrypt EBS volume at rest
